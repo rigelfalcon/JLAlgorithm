@@ -1,0 +1,122 @@
+% This subprogram has been changed in order to fit this JLE-4_Cholesky
+
+function U=subprogram33(G)
+% N, m positive integers, m>=2
+% B is a column vector N+1, G is a matrix Nx(m-1)
+G=G.';
+[N,m]=size(G);
+
+B=G(:,m);
+
+I=eye(m);
+%[X,ETA]=subprogram2(B,G);
+
+ETA=zeros(N,m);
+
+for i=1:m-1
+    eta=conv(B,G(:,i));
+    eta=flipud(eta(1:(N)));
+    ETA(:,i)=eta;
+ end;
+ 
+ G0=ETA;
+   
+   clear B  G
+   
+ ETA(1,m)=1;  %this is a new here
+
+ G0(N,m)=1;
+   
+U=zeros(N,N);
+   
+   D=zeros(1,N);
+    
+    for j=1:(N-1)
+          g0=G0(N+1-j,:);
+          U0=G0*g0';
+          d0=U0(end);
+          D(N-j+1)=d0;
+          V0=U0(2:(end))-U0(1:(end-1));
+          M0=V0*g0/d0;
+          G0=M0+G0(1:(end-1),:);
+          U(1:(N+1-j),N+1-j)=U0;
+          
+         
+    end;
+          g0=G0(1,:);
+          U0=G0*g0';
+          d0=U0(end);
+          D(1)=d0;
+          U(1,1)=U0;
+        
+       
+         
+          clear G0
+
+Y=U\ETA;
+
+
+
+
+Y=diag(D)*Y;
+X=U.'\Y;
+
+ETA(:,m)=[];
+
+clear U  U1
+
+
+
+U=zeros(m,m,N);
+
+U(m,:,:)=X.';
+
+X=flip(X,1);  %this has been changed from Subprogram 3 (moved down); U keeps the last row without "flip"
+
+
+
+
+NN=2*N-1;  ETA=ETA.';   
+ETA=fft(ETA,NN,2);  X=fft(X,NN,1);
+pp=zeros(m-1,m,NN);
+
+
+for i=1:NN
+    pp(:,:,i)=ETA(:,i)*X(i,:);
+end
+
+pp=ifft(pp,NN,3);
+
+U(1:m-1,:,1:N)=pp(:,:, N:NN);
+
+
+% for j=1:m
+%     for i=1:(m-1)
+%         pp=conv(X(:,j),ETA(:,i));
+%         U(i,j,:)=pp((N+1):(2*N+1));
+%     end;
+% end;
+
+I(m,m)=0;   U(:,:,1)=U(:,:,1)-I;
+
+v=sum(U,3);
+%u=inv(v);
+
+        for k=1:N
+            U(:,:,k)=U(:,:,k)/v;
+        end;
+        
+        %----------here we check the unitarity of U (flipping the last row)
+%         UT=U;
+%         for k=1:m
+%            UT(m,k,:)=flip(squeeze(UT(m,k,:)));
+%         end
+%         UT_flip=conj(permute(UT,[2,1,3]));
+%   UT_flip=flip(UT_flip,3);
+%   
+%   Id=Prod_Mat_Pol(UT,UT_flip);
+%      II=zeros(m,m,2*N-1);
+%      II(:,:,N)=eye(m);
+%      ErrUnit=max(max(max(abs(Id-II))))
+% %   
+    
