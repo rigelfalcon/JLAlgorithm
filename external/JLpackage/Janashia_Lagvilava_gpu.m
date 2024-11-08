@@ -8,10 +8,10 @@ n=10;       % random polynomial degree
 p=9;     FFTP=2^p;  % Number of FFT nodes in frequency domain
 FF2=FFTP/2; % N=1000;
 
-AA=zeros(d,d,n+1);
+AA=zeros(d,d,n+1,'gpuArray');
 
 for k=1:n+1
-    AD=randn(d,d); AA(:,:,k)=AD;
+    AD=randn(d,d,class(AA)); AA(:,:,k)=AD;
 end
 
 %AA=rand(d,d,n+1);
@@ -21,9 +21,9 @@ AA_flip=flip(AA_flip,3);
 A=Prod_Mat_Pol(AA,AA_flip);
 
 tic
-I=eye(d);
+I=eye(d,class(AA));
 n_mid=(size(A,3)+1)/2;      %this part copied from Test_Wilson_Iter
-S_ext=cat(3, A(:,:,n_mid:end), zeros(d,d, FFTP-2*n_mid+1), A(:,:,1:n_mid-1));
+S_ext=cat(3, A(:,:,n_mid:end), zeros(d,d, FFTP-2*n_mid+1,'gpuArray'), A(:,:,1:n_mid-1));
 S_ext=fft(S_ext,[],3);      %cheked positive definite
 S_ext=(S_ext+conj(permute(S_ext,[2 1 3])))/2;
 %    for k=1:FFTP                         %We add ep on the diagonal to Wilson
@@ -34,7 +34,7 @@ S_ext=(S_ext+conj(permute(S_ext,[2 1 3])))/2;
 %--------------------------cpoied from GenerationMukesh
 tic
 
-A_ext=zeros(d,d,FFTP);
+A_ext=zeros(d,d,FFTP,class(AA));
 
 A_ext(:,:,1)=chol(S_ext(:,:,1), 'lower');
 
@@ -50,7 +50,7 @@ Time_Cholesky=toc;
 
 %------------------here ends Cholesky factorization
 
-Phaza=zeros(d,FFTP);
+Phaza=zeros(d,FFTP,class(AA));
 for r=1:d
     Diag=ScalarFactSingPhaza(squeeze(A_ext(r,r,1:FF2+1)).');
     Phaza(r,:)=exp(1j*Diag);
@@ -91,7 +91,7 @@ for r=2:d
     b=phi_temp(r,1:N+1);
     b=inverse_polynomial(b);
 
-    G=zeros(r,N+1);
+    G=zeros(r,N+1,class(A_ext));
 
     G(r,:)=b(1,:);
 
@@ -130,7 +130,9 @@ A_time_domain=ifft(A_ext,FFTP,3);
 ans1=A_time_domain(:,:,FF2+1:FFTP);
 Check_causality=max(max(max(abs(ans1))))
 
-
+if isgpuarray(A_time_domain)
+    A_time_domain=gather(A_time_domain);
+end
 %-- Here we write the result in the form where S(0) is positive definite
 
 cov1=A_time_domain(:,:,1);

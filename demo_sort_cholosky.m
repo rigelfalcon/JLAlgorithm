@@ -1,5 +1,6 @@
 clc
 clear all
+rng(0)
 format long
 d=100;        % matrix dimension
 n=10;       % random polynomial degree
@@ -20,9 +21,32 @@ A=Prod_Mat_Pol(AA,AA_flip);
 tic
 I=eye(d);
 n_mid=(size(A,3)+1)/2;      %this part copied from Test_Wilson_Iter
-S_ext=cat(3, A(:,:,n_mid:end), zeros(d,d, FFTP-2*n_mid+1), A(:,:,1:n_mid-1));
-S_ext=fft(S_ext,[],3);      %cheked positive definite
-S_ext=(S_ext+conj(permute(S_ext,[2 1 3])))/2;
+S=cat(3, A(:,:,n_mid:end), zeros(d,d, FFTP-2*n_mid+1), A(:,:,1:n_mid-1));
+S=fft(S,[],3);      %cheked positive definite
+S=(S+conj(permute(S,[2 1 3])))/2;
+
+
+%%
+order = zeros(d,1);
+
+
+
+for iorder=1:d
+    s=full2diag(S,true);
+
+    [s_fmin]=min(s,[],2);
+    [~,idx_fmin_cmax]=max(s_fmin);
+    order(iorder)=idx_fmin_cmax;
+    id=(1:d)';
+    id_order=id(id~=idx_fmin_cmax);
+    id_order=[idx_fmin_cmax;id_order]; %#ok<AGROW>
+
+    S_order=S(id_order,id_order,:); %S(idx_fmin_cmax,idx_fmin_cmax,:)-S_order(1,1,:)
+    
+    A=pagechol(S_order);
+
+end
+
 
 
 

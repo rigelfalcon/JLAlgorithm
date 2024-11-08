@@ -6,7 +6,7 @@ m=m-1;
 n=n-1;
 mn=m+n;
 
-PrM=zeros(d1,d3,m+n+1);
+PrM=zeros(d1,d3,m+n+1,class(MP1));
 
 
 
