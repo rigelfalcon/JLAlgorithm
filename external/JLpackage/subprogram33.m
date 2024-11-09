@@ -7,10 +7,12 @@ G=G.';
 [N,m]=size(G);
 
 B=G(:,m);
-
 I=eye(m,class(G));
-%[X,ETA]=subprogram2(B,G);
 
+%%
+
+%[X,ETA]=subprogram2(B,G);
+% %{
 ETA=zeros(N,m,class(G));
 
 for i=1:m-1
@@ -18,7 +20,29 @@ for i=1:m-1
     eta=flipud(eta(1:(N)));
     ETA(:,i)=eta;
 end;
+% %}
 
+%%
+%{
+ETA = zeros(N, m, class(G));
+eta= convn(G(:,1:m-1),B);
+ETA(:,1:m-1)=eta(1:N, :);
+%}
+%%
+%{
+% Preallocate and compute ETA using vectorized FFT-based convolution
+NN = 2*N - 1;
+B_fft = fft(B, NN);
+G_fft = fft(G(:,1:m-1), NN);
+ETA_fft = B_fft .* G_fft;
+eta = ifft(ETA_fft, NN);
+eta = flipud(eta(1:N, :));
+ETA = zeros(N, m, class(G));
+ETA(:,1:m-1) = eta;
+% error=sum((ETA2-ETA).^2,'all')
+%}
+%%
+% Initialize G0 and other variables
 G0=ETA;
 
 clear B  G
@@ -31,18 +55,34 @@ U=zeros(N,N,class(ETA));
 
 D=zeros(1,N,class(ETA));
 
-for j=1:(N-1)
-    g0=G0(N+1-j,:);
-    U0=G0*g0';
-    d0=U0(end);
-    D(N-j+1)=d0;
-    V0=U0(2:(end))-U0(1:(end-1));
-    M0=V0*g0/d0;
-    G0=M0+G0(1:(end-1),:);
-    U(1:(N+1-j),N+1-j)=U0;
+% for j=1:(N-1)
+%     g0=G0(N+1-j,:);
+%     U0=G0*g0';
+%     d0=U0(end);
+%     D(N-j+1)=d0;
+%     % V0=U0(2:(end))-U0(1:(end-1));
+%     V0 = diff(U0);
+%     M0=V0*g0/d0;
+%     G0=M0+G0(1:(end-1),:);
+%     U(1:(N+1-j),N+1-j)=U0;
+% 
+% 
+% end;
 
-
+G0_size = N;
+for j = 1:(N-1)
+    idx = N+1-j;
+    g0 = G0(idx, :);
+    U0 = G0(1:G0_size, :) * g0';
+    d0 = U0(end);
+    D(N-j+1) = d0;
+    V0 = diff(U0);
+    M0 = (V0 * g0) / d0;
+    G0 = M0 + G0(1:G0_size-1, :);
+    U(1:G0_size, idx) = U0;
+    G0_size = G0_size - 1;
 end;
+
 g0=G0(1,:);
 U0=G0*g0';
 d0=U0(end);
