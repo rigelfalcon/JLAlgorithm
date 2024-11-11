@@ -3,7 +3,7 @@ clear all
 format long
 rng(0)
 
-d=200;        % matrix dimension
+d=1000;        % matrix dimension
 n=10;       % random polynomial degree
 p=9;     FFTP=2^p;  % Number of FFT nodes in frequency domain
 FF2=FFTP/2; % N=1000;
@@ -68,12 +68,13 @@ clear Phaza
 
 %--------here ends making analitic diagonal and changing phazes of off-diagonal terms
 
-
+U_ext_last=diag2full(ones(r,FFTP));
 
 for r=2:d
     r
+    phi_temp = permute(pagemtimes(A_ext(r,1:r,:),U_ext_last(1:r,1:r,:)),[2,3,1]);
 
-    phi_temp=reshape(A_ext(r,1:r,:), [r,FFTP]);
+    % phi_temp=reshape(A_ext(r,1:r,:), [r,FFTP]);
 
     %      phi_temp(r,:)=1./phi_temp(r,:);
     %
@@ -110,8 +111,18 @@ for r=2:d
     % for k=1:FFTP
     %     A_ext(:,1:r,k)=A_ext(:,1:r,k)*U_ext(:,:,k);
     % end
-    A_ext(:,1:r,:)=pagemtimes(A_ext(:,1:r,:),U_ext);
+    % A_ext(:,1:r,:)=pagemtimes(A_ext(:,1:r,:),U_ext);
+    % U_ext(1:r,1:r,:)=pagemtimes(U_ext_last(1:r,1:r,:),U_ext(1:r,1:r,:));
+    % U_ext_last(1:r-1,1:r,:)=pagemtimes(U_ext_last(1:r-1,1:r-1,:),U_ext(1:r-1,1:r,:));
+    % U_ext_last(r,1:r,:)=U_ext(r,:,:);
+    % U_ext_last(1:r,r,:)=U_ext(:,r,:);
+    U_ext_last(1:r,1:r,:)=pagemtimes(U_ext_last(1:r,1:r,:),U_ext(1:r,1:r,:));
+
 end
+
+A_ext=pagemtimes(A_ext,U_ext_last);
+
+
 toc
 %--------------HERE WE CHECK THE FINAL RESULT
 %---- we check error in the frequency domain
