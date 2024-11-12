@@ -3,7 +3,7 @@ clear all
 format long
 rng(0)
 
-d=1000;        % matrix dimension
+d=100;        % matrix dimension
 n=10;       % random polynomial degree
 p=9;     FFTP=2^p;  % Number of FFT nodes in frequency domain
 FF2=FFTP/2; % N=1000;
