@@ -7,11 +7,12 @@ d=100;        % matrix dimension
 n=10;       % random polynomial degree
 p=9;     FFTP=2^p;  % Number of FFT nodes in frequency domain
 FF2=FFTP/2; % N=1000;
-
-AA=zeros(d,d,n+1,'gpuArray');
+dtype='double';
+dtype='gpuArrays';
+AA=zeros(d,d,n+1,dtype);
 
 for k=1:n+1
-    AD=randn(d,d,class(AA)); AA(:,:,k)=AD;
+    AD=randn(d,d,dtype); AA(:,:,k)=AD;
 end
 
 %AA=rand(d,d,n+1);
@@ -21,9 +22,9 @@ AA_flip=flip(AA_flip,3);
 A=Prod_Mat_Pol(AA,AA_flip);
 
 tic
-I=eye(d,class(AA));
+I=eye(d,dtype);
 n_mid=(size(A,3)+1)/2;      %this part copied from Test_Wilson_Iter
-S_ext=cat(3, A(:,:,n_mid:end), zeros(d,d, FFTP-2*n_mid+1,class(AA)), A(:,:,1:n_mid-1));
+S_ext=cat(3, A(:,:,n_mid:end), zeros(d,d, FFTP-2*n_mid+1,dtype), A(:,:,1:n_mid-1));
 S_ext=fft(S_ext,[],3);      %cheked positive definite
 S_ext=(S_ext+conj(permute(S_ext,[2 1 3])))/2;
 %    for k=1:FFTP                         %We add ep on the diagonal to Wilson
@@ -34,7 +35,7 @@ clear A AA AA_flip AD
 %--------------------------cpoied from GenerationMukesh
 tic
 
-A_ext=zeros(d,d,FFTP,class(S_ext));
+A_ext=zeros(d,d,FFTP,dtype);
 
 A_ext(:,:,1)=chol(S_ext(:,:,1), 'lower');
 
@@ -50,7 +51,7 @@ Time_Cholesky=toc;
 
 %------------------here ends Cholesky factorization
 
-Phaza=zeros(d,FFTP,class(S_ext));
+Phaza=zeros(d,FFTP,dtype);
 for r=1:d
     Diag=ScalarFactSingPhaza(squeeze(A_ext(r,r,1:FF2+1)).');
     Phaza(r,:)=exp(1j*Diag);
@@ -68,7 +69,7 @@ clear Phaza
 
 %--------here ends making analitic diagonal and changing phazes of off-diagonal terms
 
-U_ext_last=diag2full(ones(r,FFTP,class(A_ext)));
+U_ext_last=diag2full(ones(r,FFTP,dtype));
 
 for r=2:d
     r
@@ -92,7 +93,7 @@ for r=2:d
     b=phi_temp(r,1:N+1);
     b=inverse_polynomial(b);
 
-    G=zeros(r,N+1,class(A_ext));
+    G=zeros(r,N+1,dtype);
 
     G(r,:)=b(1,:);
 
@@ -102,7 +103,7 @@ for r=2:d
 
     clear  phi_temp
 
-    U=subprogram33(G);
+    U=subprogram34(G);
 
     U_ext=fft(U,FFTP,3);
 
@@ -127,7 +128,7 @@ toc
 %--------------HERE WE CHECK THE FINAL RESULT
 %---- we check error in the frequency domain
 
-A=zeros(d,d,FF2,class(A_ext));
+A=zeros(d,d,FF2,dtype);
 for k=1:FF2
     A(:,:,k)=A_ext(:,:,k)*A_ext(:,:,k)';
 end
