@@ -8,7 +8,7 @@ n=10;       % random polynomial degree
 p=9;     FFTP=2^p;  % Number of FFT nodes in frequency domain
 FF2=FFTP/2; % N=1000;
 
-AA=zeros(d,d,n+1,'double');
+AA=zeros(d,d,n+1,'gpuArray');
 
 for k=1:n+1
     AD=randn(d,d,class(AA)); AA(:,:,k)=AD;
@@ -68,7 +68,7 @@ clear Phaza
 
 %--------here ends making analitic diagonal and changing phazes of off-diagonal terms
 
-U_ext_last=diag2full(ones(r,FFTP));
+U_ext_last=diag2full(ones(r,FFTP,class(A_ext)));
 
 for r=2:d
     r
@@ -127,7 +127,7 @@ toc
 %--------------HERE WE CHECK THE FINAL RESULT
 %---- we check error in the frequency domain
 
-A=zeros(d,d,FF2);
+A=zeros(d,d,FF2,class(A_ext));
 for k=1:FF2
     A(:,:,k)=A_ext(:,:,k)*A_ext(:,:,k)';
 end
