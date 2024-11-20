@@ -3,12 +3,19 @@ clear all
 format long
 rng(0)
 
-d=2;        % matrix dimension
+d=1024;        % matrix dimension
+d2=log2(d);
+
 n=10;       % random polynomial degree
 p=9;     FFTP=2^p;  % Number of FFT nodes in frequency domain
 FF2=FFTP/2; % N=1000;
 dtype='double';
 % dtype='gpuArray';
+
+
+
+
+
 AA=zeros(d,d,n+1,dtype);
 
 for k=1:n+1
@@ -69,10 +76,36 @@ clear Phaza
 
 %--------here ends making analitic diagonal and changing phazes of off-diagonal terms
 
-U_ext_last=diag2full(ones(r,FFTP,dtype));
 
-for r=2:d
+
+% U_ext_last=diag2full(ones(r,FFTP,dtype));
+% parfor
+for r=1:d2
     r
+    M=2^(r-1);
+    for k=2:2:(2^(d2-r+1))
+        phi_temp=A_ext(M*(k-1)+1:M*k,(k-2)*M+1:(k-2)*M+2*M,:);% take the blocks for each, can use tril(-1) triu(+1) to reshape
+        phi_temp=ifft(phi_temp,FFTP,3);
+        if r==1
+            phi_max=permute(abs(phi_temp(:,1:M,FF2:end)),[3,1,2]);
+        else
+            phi_max=permute(max(abs(phi_temp(:,1:M,FF2:end)),[],[1,2]),[3,1,2]);
+        end
+        temp=phi_max>10^(-4);
+        N = FF2-find(temp~=0, 1, 'first');
+        N=ceil(N/M);        
+        G=zeros(2*M,N*M);
+        G(M+1:end,:)=reshape(phi_temp(:,M+1:2*M,1:N),[M,M*N]);
+        G(1:M,1:end-M)=reshape(phi_temp(:,1:M,FFTP-N+2:FFTP),[M,M*(N-1)]);
+        U=subprogram35(G);
+        U_ext=fft(U,FFTP,3);
+        U_ext(M+1:end,:,:)=conj(U_ext(M+1:end,:,:));
+        A_ext(M*(k-2)+1:end,(k-2)*M+1:(k-2)*M+2*M,:)=pagemtimes(A_ext(M*(k-2)+1:end,(k-2)*M+1:(k-2)*M+2*M,:),U_ext);
+    end
+end
+
+
+%{
     phi_temp = permute(pagemtimes(A_ext(r,1:r,:),U_ext_last(1:r,1:r,:)),[2,3,1]);
 
     % phi_temp=reshape(A_ext(r,1:r,:), [r,FFTP]);
@@ -122,7 +155,7 @@ for r=2:d
 end
 
 A_ext=pagemtimes(A_ext,U_ext_last);
-
+%}
 
 toc
 %--------------HERE WE CHECK THE FINAL RESULT
