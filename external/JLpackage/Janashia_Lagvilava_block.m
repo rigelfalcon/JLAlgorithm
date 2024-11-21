@@ -3,7 +3,7 @@ clear all
 format long
 rng(0)
 
-d=1024;        % matrix dimension
+d=128;        % matrix dimension
 d2=log2(d);
 
 n=10;       % random polynomial degree
@@ -100,7 +100,7 @@ for r=1:d2
         U=subprogram35(G);
         U_ext=fft(U,FFTP,3);
         U_ext(M+1:end,:,:)=conj(U_ext(M+1:end,:,:));
-        A_ext(M*(k-2)+1:end,(k-2)*M+1:(k-2)*M+2*M,:)=pagemtimes(A_ext(M*(k-2)+1:end,(k-2)*M+1:(k-2)*M+2*M,:),U_ext);
+        A_ext(M*(k-1)+1:end,(k-2)*M+1:(k-2)*M+2*M,:)=pagemtimes(A_ext(M*(k-1)+1:end,(k-2)*M+1:(k-2)*M+2*M,:),U_ext);
     end
 end
 
