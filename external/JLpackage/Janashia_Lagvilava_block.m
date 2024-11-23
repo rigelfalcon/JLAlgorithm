@@ -6,7 +6,7 @@ rng(0)
 d=128;        % matrix dimension
 d2=log2(d);
 
-n=10;       % random polynomial degree
+n=3;       % random polynomial degree
 p=9;     FFTP=2^p;  % Number of FFT nodes in frequency domain
 FF2=FFTP/2; % N=1000;
 dtype='double';
@@ -93,17 +93,40 @@ for r=1:d2
         end
         temp=phi_max>10^(-4);
         N = FF2-find(temp~=0, 1, 'first');
-        N=ceil(N/M);        
-        G=zeros(2*M,N*M);
-        G(M+1:end,:)=reshape(phi_temp(:,M+1:2*M,1:N),[M,M*N]);
-        G(1:M,1:end-M)=reshape(phi_temp(:,1:M,FFTP-N+2:FFTP),[M,M*(N-1)]);
-        U=subprogram35(G);
-        U_ext=fft(U,FFTP,3);
-        U_ext(M+1:end,:,:)=conj(U_ext(M+1:end,:,:));
-        A_ext(M*(k-1)+1:end,(k-2)*M+1:(k-2)*M+2*M,:)=pagemtimes(A_ext(M*(k-1)+1:end,(k-2)*M+1:(k-2)*M+2*M,:),U_ext);
+        N=ceil(N/M);   
+
+        % b=phi_temp(r,1:N+1);
+        % b=inverse_polynomial(b);
+
+
+        F=phi_temp(:,M+1:2*M,1:N-1);% saved coefficient of F in from 0 to  N-1 (0->pi)
+        Phi=phi_temp(:,1:M,FFTP-N+2:FFTP); %saved coefficient of Phi in from -N+1 to -1 (pi->2pi)
+        
+        f_inv_phi=inverse_polynomial_block(Phi,F);
+
+        G=reshape(f_inv_phi,[M,M*(N-1)]);
+
+        U=subprogram36(G);
+        N_U=size(U,3);
+        U=padarray(U,[0,0,FFTP-N_U],0,'post');
+        U_neg=U(M+1:end,:,1:N_U);
+        U(M+1:end,:,1:N_U)=0;
+        U(M+1:end,:,1)=U_neg(:,:,end);
+        U_neg(:,:,end)=[];
+        U(M+1:end,:,end-N_U+2:end)=U_neg;
+
+
+        U_ext=fft(U,[],3);
+
+        % kk=8;
+        % W=U_ext(:,:,kk);
+        % Err=abs(W*W'-eye(2*M));
+        % er=max(Err(:))
+
+        % U_ext(M+1:end,:,:)=conj(U_ext(M+1:end,:,:));
+        A_ext(M*(k-2)+1:end,(k-2)*M+1:(k-2)*M+2*M,:)=pagemtimes(A_ext(M*(k-2)+1:end,(k-2)*M+1:(k-2)*M+2*M,:),U_ext);
     end
 end
-
 
 %{
     phi_temp = permute(pagemtimes(A_ext(r,1:r,:),U_ext_last(1:r,1:r,:)),[2,3,1]);

@@ -1,15 +1,16 @@
 
 
 function U=subprogram36(G)
-clc
+% clc
 
-N=3;   M=2;
+% N=3;   M=2;
 %N=10;  M=7;
 %
 % g1=[1 2 3;  4 5 6; 7 8 9];
 % g2=[10 11 12; 13 14 15; 16 17 18];
 % g3=[19 20 21; 22 23 24; 25 26 27];
 % g4=[28 29 30; 31 32 33; 34 35 36];
+[M,N]=size(G);      N=N/M;      K=M*N;
 
 
 
@@ -17,7 +18,7 @@ Im=eye(M);
 
 %G=zeros(M*2,N*M);
 % G=zeros(M,N*M);
-G=rand(M,N*M);
+% G=rand(M,N*M);
 
 % G(:,M+1:2*M)=g1;   G(:,2*M+1:3*M)=g2;
 % G(:,3*M+1:4*M)=g3;   G(:,4*M+1:5*M)=g4;
@@ -31,7 +32,6 @@ GT = reshape(permute(reshape(GT, M, M, N), [2, 1, 3]), M, M * N);
 
 
 
-[M,N]=size(G);      N=N/M;      K=M*N;
 
 
 D = eye(K, K); % Preallocate
@@ -39,7 +39,7 @@ for k=1:N-1
     D(1:M,M*k+1:M*(k+1))=Im;
 end
 
-D;
+% D;
 
 Gm = zeros(K, K); % Preallocate
 
@@ -97,7 +97,7 @@ U=cat(2,cat(1,X11,fX21),...
 % end
 % UT=flip(UT,3);
 % PrM=Prod_Mat_Pol(U,UT)
-% 
+
 
 end
 
