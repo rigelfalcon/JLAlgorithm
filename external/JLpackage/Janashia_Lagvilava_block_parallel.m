@@ -3,7 +3,7 @@ clear all
 format long
 rng(0)
 
-d=256;        % matrix dimension
+d=1024;        % matrix dimension
 d2=log2(d);
 
 n=3;       % random polynomial degree
@@ -71,8 +71,6 @@ clear Diag
 % for k=1:FFTP
 %     A_ext(:,:,k)=A_ext(:,:,k)*diag(Phaza(:,k));
 % end
-
-
 A_ext=pagemtimes(A_ext,diag2full(Phaza));
 
 clear Phaza
@@ -81,25 +79,38 @@ clear Phaza
 
 
 
-% U_ext_last=diag2full(ones(r,FFTP,dtype));
-% parfor
+startmatlabpool(feature('numcores'));
+
+
 for r=1:d2
     r
     M=2^(r-1);
-    for k=2:2:(2^(d2-r+1))
-        phi_temp=A_ext(M*(k-1)+1:M*k,(k-2)*M+1:(k-2)*M+2*M,:);% take the blocks for each, can use tril(-1) triu(+1) to reshape
+    kall=2:2:(2^(d2-r+1));
+    if M<1024 && length(kall)>8
+        isparallel=Inf;
+    else
+        isparallel=0;
+    end
+    A_ext_block=cell(length(kall),1);
+    for ik=length(kall):-1:1
+        % phi_temp=A_ext((k-1)*M+1:M*k,(k-2)*M+1:(k-2)*M+2*M,:);
+        % A_ext((k-2)*M+1:end,(k-2)*M+1:(k-2)*M+2*M,:)=pagemtimes(A_ext((k-2)*M+1:end,(k-2)*M+1:(k-2)*M+2*M,:),U_ext);
+        k=kall(ik);
+        A_ext_block{ik}=A_ext((k-2)*M+1:end,(k-2)*M+1:(k-2)*M+2*M,:);
+    end
+    % isparallel
+    parfor (ik=1:length(kall),isparallel)
+    % for ik=1:length(kall)
+        phi_temp=A_ext_block{ik}(M+1:2*M,1:2*M,:);% take the blocks for each, can use tril(-1) triu(+1) to reshape
         phi_temp=ifft(phi_temp,FFTP,3);
-        if r==1
-            phi_max=permute(abs(phi_temp(:,1:M,FF2:end)),[3,1,2]);
-        else
-            phi_max=permute(max(abs(phi_temp(:,1:M,FF2:end)),[],[1,2]),[3,1,2]);
-        end
+        % if r==1
+        %     phi_max=permute(abs(phi_temp(:,1:M,FF2:end)),[3,1,2]);
+        % else
+        %     phi_max=permute(max(abs(phi_temp(:,1:M,FF2:end)),[],[1,2]),[3,1,2]);
+        % end
+        phi_max=permute(max(abs(phi_temp(:,1:M,FF2:end)),[],[1,2]),[3,1,2]);
         temp=phi_max>10^(-4);
         N = FF2-find(temp~=0, 1, 'first');
-        % N=ceil(N/M);   
-
-        % b=phi_temp(r,1:N+1);
-        % b=inverse_polynomial(b);
 
 
         F=phi_temp(:,M+1:2*M,1:N-1);% saved coefficient of F in from 0 to  N-1 (0->pi)
@@ -110,7 +121,7 @@ for r=1:d2
         f_inv_phi=flip(f_inv_phi,3);
         G=reshape(f_inv_phi,[M,M*(N)]);
 
-        U=subprogram36_speedup(G);
+        U=subprogram36(G);
         N_U=size(U,3);
         U=padarray(U,[0,0,FFTP-N_U],0,'post');
         U_neg=U(M+1:end,:,1:N_U);
@@ -128,77 +139,32 @@ for r=1:d2
         % er=max(Err(:))
 
         % U_ext(M+1:end,:,:)=conj(U_ext(M+1:end,:,:));
-        A_ext(M*(k-2)+1:end,(k-2)*M+1:(k-2)*M+2*M,:)=pagemtimes(A_ext(M*(k-2)+1:end,(k-2)*M+1:(k-2)*M+2*M,:),U_ext);
+        % A_ext(M*(k-2)+1:end,(k-2)*M+1:(k-2)*M+2*M,:)=pagemtimes(A_ext(M*(k-2)+1:end,(k-2)*M+1:(k-2)*M+2*M,:),U_ext);
+        A_ext_block{ik}=pagemtimes(A_ext_block{ik},U_ext);
 
         % % check causality
         % A_time_domain=ifft(A_ext((k-2)*M+1:(k-2)*M+2*M,(k-2)*M+1:(k-2)*M+2*M,:),FFTP,3);
         % ans1=A_time_domain(:,:,FFTP);
         % Check_causality=max(max(max(abs(ans1))))
-
-
+    end
+    for ik=length(kall):-1:1
+        % phi_temp=A_ext(M*(k-1)+1:M*k,(k-2)*M+1:(k-2)*M+2*M,:);
+        % A_ext((k-2)*M+1:end,(k-2)*M+1:(k-2)*M+2*M,:)=pagemtimes(A_ext((k-2)*M+1:end,(k-2)*M+1:(k-2)*M+2*M,:),U_ext);
+        k=kall(ik);
+        A_ext((k-2)*M+1:end,(k-2)*M+1:(k-2)*M+2*M,:)=A_ext_block{ik};
     end
 end
 
-%{
-    phi_temp = permute(pagemtimes(A_ext(r,1:r,:),U_ext_last(1:r,1:r,:)),[2,3,1]);
-
-    % phi_temp=reshape(A_ext(r,1:r,:), [r,FFTP]);
-
-    %      phi_temp(r,:)=1./phi_temp(r,:);
-    %
-    phi_temp=ifft(phi_temp,FFTP,2);
-
-    if r==2
-        phi_max=abs(phi_temp(1:r-1,FF2:end));
-    else
-        phi_max=max(abs(phi_temp(1:r-1,FF2:end)));
-    end
-    temp=phi_max>10^(-4);
-
-    N = FF2-find(temp~=0, 1, 'first');
-
-    b=phi_temp(r,1:N+1);
-    b=inverse_polynomial(b);
-
-    G=zeros(r,N+1,dtype);
-
-    G(r,:)=b(1,:);
-
-
-    G(1:r-1,1:N)=phi_temp(1:r-1,FFTP-N+1:FFTP);
-
-
-    clear  phi_temp
-
-    U=subprogram34(G);
-
-    U_ext=fft(U,FFTP,3);
-
-    U_ext(r,:,:)=conj(U_ext(r,:,:));
-
-    % for k=1:FFTP
-    %     A_ext(:,1:r,k)=A_ext(:,1:r,k)*U_ext(:,:,k);
-    % end
-    % A_ext(:,1:r,:)=pagemtimes(A_ext(:,1:r,:),U_ext);
-    % U_ext(1:r,1:r,:)=pagemtimes(U_ext_last(1:r,1:r,:),U_ext(1:r,1:r,:));
-    % U_ext_last(1:r-1,1:r,:)=pagemtimes(U_ext_last(1:r-1,1:r-1,:),U_ext(1:r-1,1:r,:));
-    % U_ext_last(r,1:r,:)=U_ext(r,:,:);
-    % U_ext_last(1:r,r,:)=U_ext(:,r,:);
-    U_ext_last(1:r,1:r,:)=pagemtimes(U_ext_last(1:r,1:r,:),U_ext(1:r,1:r,:));
-
-end
-
-A_ext=pagemtimes(A_ext,U_ext_last);
-%}
 
 toc
 %--------------HERE WE CHECK THE FINAL RESULT
 %---- we check error in the frequency domain
 
 A=zeros(d,d,FF2,dtype);
-for k=1:FF2
-    A(:,:,k)=A_ext(:,:,k)*A_ext(:,:,k)';
-end
+% for k=1:FF2
+%     A(:,:,k)=A_ext(:,:,k)*A_ext(:,:,k)';
+% end
+A=pagemtimes(A_ext,'none',A_ext,'ctranspose');
 
 B=A-S_ext(:,:,1:FF2);
 Error_frequency_domain=max(max(max(abs(B))))
@@ -216,10 +182,11 @@ end
 
 cov1=A_time_domain(:,:,1);
 Cov=cov1*cov1';   Cov=sqrtm(Cov);
-cov2=inv(cov1); cov2=cov2*Cov;
+cov2=inv(cov1); cov2=cov2*Cov; %#ok<*MINV>
 %Det=det(Cov)
-for k=1:n+1
-    A_time_domain(:,:,k)=A_time_domain(:,:,k)*cov2;
-end
+% for k=1:n+1
+%     A_time_domain(:,:,k)=A_time_domain(:,:,k)*cov2;
+% end
+A_time_domain=pagemtimes(A_time_domain,cov2);
 
 Pasuxi_22=A_time_domain(:,:,1:n+1);

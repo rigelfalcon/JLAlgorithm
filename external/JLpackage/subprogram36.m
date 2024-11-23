@@ -50,7 +50,6 @@ for i = 2:N
     end
 end
 
-
 GmT = zeros(K, K); % Preallocate
 
 for i = 2:N
@@ -60,7 +59,6 @@ for i = 2:N
     end
 end
 %disp(Gm);
-
 
 Dt=zeros(2*K);
 Dt(1:K,1:K)=D;   Dt(1:K,K+1:end)=-GmT;
