@@ -3,7 +3,7 @@ clear all
 format long
 rng(0)
 
-d=128;        % matrix dimension
+d=2;        % matrix dimension
 d2=log2(d);
 
 n=3;       % random polynomial degree
@@ -92,8 +92,8 @@ for r=1:d2
             phi_max=permute(max(abs(phi_temp(:,1:M,FF2:end)),[],[1,2]),[3,1,2]);
         end
         temp=phi_max>10^(-4);
-        N = FF2-find(temp~=0, 1, 'first');
-        N=ceil(N/M);   
+        N = FF2-find(temp~=0, 1, 'first')
+        % N=ceil(N/M);   
 
         % b=phi_temp(r,1:N+1);
         % b=inverse_polynomial(b);
@@ -118,13 +118,20 @@ for r=1:d2
 
         U_ext=fft(U,[],3);
 
-        % kk=8;
-        % W=U_ext(:,:,kk);
-        % Err=abs(W*W'-eye(2*M));
-        % er=max(Err(:))
+        kk=8;
+        W=U_ext(:,:,kk);
+        Err=abs(W*W'-eye(2*M));
+        er=max(Err(:))
 
         % U_ext(M+1:end,:,:)=conj(U_ext(M+1:end,:,:));
         A_ext(M*(k-2)+1:end,(k-2)*M+1:(k-2)*M+2*M,:)=pagemtimes(A_ext(M*(k-2)+1:end,(k-2)*M+1:(k-2)*M+2*M,:),U_ext);
+
+        % check causality
+        A_time_domain=ifft(A_ext((k-2)*M+1:(k-2)*M+2*M,(k-2)*M+1:(k-2)*M+2*M,:),FFTP,3);
+        ans1=A_time_domain(:,:,FFTP);
+        Check_causality=max(max(max(abs(ans1))))
+
+
     end
 end
 
