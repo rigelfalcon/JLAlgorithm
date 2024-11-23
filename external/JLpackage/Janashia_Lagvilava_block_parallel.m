@@ -86,7 +86,7 @@ for r=1:d2
     r
     M=2^(r-1);
     kall=2:2:(2^(d2-r+1));
-    if M<1024 && length(kall)>8
+    if M<32 && length(kall)>8
         isparallel=Inf;
     else
         isparallel=0;
@@ -140,6 +140,7 @@ for r=1:d2
 
         % U_ext(M+1:end,:,:)=conj(U_ext(M+1:end,:,:));
         % A_ext(M*(k-2)+1:end,(k-2)*M+1:(k-2)*M+2*M,:)=pagemtimes(A_ext(M*(k-2)+1:end,(k-2)*M+1:(k-2)*M+2*M,:),U_ext);
+        % avoid this, do this out side, save more memory?
         A_ext_block{ik}=pagemtimes(A_ext_block{ik},U_ext);
 
         % % check causality
@@ -160,12 +161,13 @@ toc
 %--------------HERE WE CHECK THE FINAL RESULT
 %---- we check error in the frequency domain
 
-A=zeros(d,d,FF2,dtype);
+% A=zeros(d,d,FF2,dtype);
 % for k=1:FF2
 %     A(:,:,k)=A_ext(:,:,k)*A_ext(:,:,k)';
 % end
-A=pagemtimes(A_ext,'none',A_ext,'ctranspose');
+A=pagemtimes(A_ext(:,:,1:FF2),'none',A_ext(:,:,1:FF2),'ctranspose');
 
+% B=A-S_ext(:,:,1:FF2);
 B=A-S_ext(:,:,1:FF2);
 Error_frequency_domain=max(max(max(abs(B))))
 
