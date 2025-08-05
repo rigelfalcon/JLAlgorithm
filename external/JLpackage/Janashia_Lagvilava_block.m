@@ -3,11 +3,11 @@ clear all
 format long
 rng(0)
 
-d=256;        % matrix dimension
+d=1024;        % matrix dimension
 d2=log2(d);
 
 n=3;       % random polynomial degree
-p=8;     FFTP=2^p;  % Number of FFT nodes in frequency domain
+p=6;     FFTP=2^p;  % Number of FFT nodes in frequency domain
 FF2=FFTP/2; % N=1000;
 dtype='double';
 % dtype='gpuArray';
@@ -110,7 +110,7 @@ for r=1:d2
         f_inv_phi=flip(f_inv_phi,3);
         G=reshape(f_inv_phi,[M,M*(N)]);
 
-        U=subprogram36_speedup(G);
+        U=subprogram36(G);
         N_U=size(U,3);
         U=padarray(U,[0,0,FFTP-N_U],0,'post');
         U_neg=U(M+1:end,:,1:N_U);

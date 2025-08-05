@@ -7,7 +7,7 @@ d=1024;        % matrix dimension
 d2=log2(d);
 
 n=3;       % random polynomial degree
-p=7;     FFTP=2^p;  % Number of FFT nodes in frequency domain
+p=6;     FFTP=2^p;  % Number of FFT nodes in frequency domain
 FF2=FFTP/2; % N=1000;
 dtype='double';
 % dtype='gpuArray';
@@ -86,7 +86,7 @@ for r=1:d2
     r
     M=2^(r-1);
     kall=2:2:(2^(d2-r+1));
-    if M<4 && length(kall)>8
+    if M<=4 && length(kall)>8
         isparallel=Inf;
     else
         isparallel=0;
@@ -99,8 +99,8 @@ for r=1:d2
         A_ext_block{ik}=A_ext((k-2)*M+1:end,(k-2)*M+1:(k-2)*M+2*M,:);
     end
     % isparallel
-    % parfor (ik=1:length(kall),isparallel)
-    for ik=1:length(kall)
+    parfor (ik=1:length(kall),isparallel)
+    % for ik=1:length(kall)
         phi_temp=A_ext_block{ik}(M+1:2*M,1:2*M,:);% take the blocks for each, can use tril(-1) triu(+1) to reshape
         phi_temp=ifft(phi_temp,FFTP,3);
         % if r==1
@@ -109,7 +109,7 @@ for r=1:d2
         %     phi_max=permute(max(abs(phi_temp(:,1:M,FF2:end)),[],[1,2]),[3,1,2]);
         % end
         phi_max=permute(max(abs(phi_temp(:,1:M,FF2:end)),[],[1,2]),[3,1,2]);
-        temp=phi_max>10^(-4);
+        temp=phi_max>10^(-3);
         N = FF2-find(temp~=0, 1, 'first');
 
 
@@ -121,7 +121,7 @@ for r=1:d2
         f_inv_phi=flip(f_inv_phi,3);
         G=reshape(f_inv_phi,[M,M*(N)]);
 
-        U=subprogram36(G);
+        U=subprogram36_speedup(G);
         N_U=size(U,3);
         U=padarray(U,[0,0,FFTP-N_U],0,'post');
         U_neg=U(M+1:end,:,1:N_U);
