@@ -45,6 +45,17 @@ setup.m
 Entrypoint for the main block-wise Janashia-Lagvilava algorithm:
 `.\external\JLpackage\Janashia_Lagvilava_block.m`
 
+## 📜 License and Patent Information
+
+### License
+
+This project is licensed under the **GPL-3.0 License**. See the `LICENSE` file for more details.
+
+### Important Note on the Original JL Algorithm Patent
+
+Users should be aware that the Janashia-Lagvilava (JL) method is subject to patent protection.
+
+For any **commercial use**, or if you have any concerns regarding the licensing of the underlying principles, we **strongly advise contacting the original inventors (e.g., Prof. Lasha Ephremidze) for clarification**.
 
 ## 🤝 Contributors & Motivation
 
